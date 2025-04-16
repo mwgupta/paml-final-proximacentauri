@@ -12,7 +12,7 @@ st.markdown("# Practical Applications of Machine Learning (PAML)")
 
 #############################################
 
-st.markdown("### Homework 1 - Predicting Housing Prices Using Regression")
+st.markdown("### PAML Final - Predicting Mortgage Propensity Scores Using Regression")
 
 #############################################
 
@@ -54,12 +54,12 @@ class LinearRegression(object) :
     # Checkpoint 2
     def predict(self, X): 
         '''
-        Make a housing price prediction using model weights and input features X
+        Make a prediction using model weights and input features X
         
         Input
         - X: matrix of column-wise features
         Output
-        - prediction: prediction of house price
+        - prediction
         '''
         prediction=None
         

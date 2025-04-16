@@ -11,7 +11,7 @@ st.markdown("# Practical Applications of Machine Learning (PAML)")
 
 #############################################
 
-st.markdown("### Homework 1 - Predicting Housing Prices Using Regression")
+st.markdown("### PAML Final - Predicting Mortgage Propensity Scores Using Regression")
 
 #############################################
 
