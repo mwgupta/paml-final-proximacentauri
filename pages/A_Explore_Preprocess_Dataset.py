@@ -13,7 +13,7 @@ st.markdown("# Practical Applications of Machine Learning (PAML)")
 
 #############################################
 
-st.markdown("### Homework 1 - Predicting Housing Prices Using Regression")
+st.markdown("### PAML Final - Predicting Mortgage Propensity Scores Using Regression")
 
 #############################################
 
@@ -101,45 +101,45 @@ def compute_correlation(df, features):
 
     return correlation, cor_summary_statements
 
-def summarize_missing_data(df, top_n=3):
-    """
-    This function summarizes missing values in the dataset
+# def summarize_missing_data(df, top_n=3):
+#     """
+#     This function summarizes missing values in the dataset
 
-    Input: 
-        - df: the pandas dataframe
-        - top_n: top n features with missing values, default value is 3
-    Output: 
-        - a dictionary containing the following keys and values: 
-            - 'num_categories': counts the number of features that have missing values
-            - 'average_per_category': counts the average number of missing values across features
-            - 'total_missing_values': counts the total number of missing values in the dataframe
-            - 'top_missing_categories': lists the top n features with missing values
-    """
-    out_dict = {'num_categories': 0,
-                'average_per_category': 0,
-                'total_missing_values': 0,
-                'top_missing_categories': []}
+#     Input: 
+#         - df: the pandas dataframe
+#         - top_n: top n features with missing values, default value is 3
+#     Output: 
+#         - a dictionary containing the following keys and values: 
+#             - 'num_categories': counts the number of features that have missing values
+#             - 'average_per_category': counts the average number of missing values across features
+#             - 'total_missing_values': counts the total number of missing values in the dataframe
+#             - 'top_missing_categories': lists the top n features with missing values
+#     """
+#     out_dict = {'num_categories': 0,
+#                 'average_per_category': 0,
+#                 'total_missing_values': 0,
+#                 'top_missing_categories': []}
 
-    # Used for top categories with missing data
-    missing_column_counts = df[df.columns[df.isnull().any()]].isnull().sum()
-    max_idxs = np.argsort(missing_column_counts.to_numpy())[::-1][:top_n]
+#     # Used for top categories with missing data
+#     missing_column_counts = df[df.columns[df.isnull().any()]].isnull().sum()
+#     max_idxs = np.argsort(missing_column_counts.to_numpy())[::-1][:top_n]
 
-    # Compute missing statistics
-    out_dict['num_categories'] = df.isna().any(axis=0).sum()
-    out_dict['average_per_category'] = df.isna().sum().sum()/len(df.columns)
-    out_dict['total_missing_values'] = df.isna().sum().sum()
-    out_dict['top_missing_categories'] = df.columns[max_idxs[:top_n]].to_numpy()
+#     # Compute missing statistics
+#     out_dict['num_categories'] = df.isna().any(axis=0).sum()
+#     out_dict['average_per_category'] = df.isna().sum().sum()/len(df.columns)
+#     out_dict['total_missing_values'] = df.isna().sum().sum()
+#     out_dict['top_missing_categories'] = df.columns[max_idxs[:top_n]].to_numpy()
 
-    # Display missing statistics
-    st.markdown('Number of categories with missing values: {0:.2f}'.format(
-        out_dict['num_categories']))
-    st.markdown('Average number of missing values per category: {0:.2f}'.format(
-        out_dict['average_per_category']))
-    st.markdown('Total number of missing values: {0:.2f}'.format(
-        out_dict['total_missing_values']))
-    st.markdown('Top {} categories with most missing values: {}'.format(
-        top_n, out_dict['top_missing_categories']))
-    return out_dict
+#     # Display missing statistics
+#     st.markdown('Number of categories with missing values: {0:.2f}'.format(
+#         out_dict['num_categories']))
+#     st.markdown('Average number of missing values per category: {0:.2f}'.format(
+#         out_dict['average_per_category']))
+#     st.markdown('Total number of missing values: {0:.2f}'.format(
+#         out_dict['total_missing_values']))
+#     st.markdown('Top {} categories with most missing values: {}'.format(
+#         top_n, out_dict['top_missing_categories']))
+#     return out_dict
 
 def remove_features(df,removed_features):
     """
@@ -153,56 +153,56 @@ def remove_features(df,removed_features):
     st.session_state['house_df'] = X
     return X
 
-def remove_nans(df):
-    """
-    This function removes all NaN values in the dataframe
+# def remove_nans(df):
+#     """
+#     This function removes all NaN values in the dataframe
 
-    Input: 
-        - df: pandas dataframe
-    Output: 
-        - df: updated df with no Nan observations
-    """
-    # Remove obs with nan values
-    df = df.dropna()
-    # df.to_csv('remove_nans.csv',index= False)
-    st.session_state['house_df'] = df
-    return df
+#     Input: 
+#         - df: pandas dataframe
+#     Output: 
+#         - df: updated df with no Nan observations
+#     """
+#     # Remove obs with nan values
+#     df = df.dropna()
+#     # df.to_csv('remove_nans.csv',index= False)
+#     st.session_state['house_df'] = df
+#     return df
 
-def impute_dataset(df, impute_method):
-    """
-    Impute the dataset df with imputation method impute_method 
-    including mean, median, zero values or drop Nan values in 
-    the dataset (all numeric and string columns).
+# def impute_dataset(df, impute_method):
+#     """
+#     Impute the dataset df with imputation method impute_method 
+#     including mean, median, zero values or drop Nan values in 
+#     the dataset (all numeric and string columns).
 
-    Input: 
-    - df is dataset in pandas dataframe
-    - impute_method = {'Zero', 'Mean', 'Median','DropNans'}
-    Output: pandas dataframe df
-    """
-    df=df.dropna()
-    X = df.copy()
-    nan_colns = X.columns[X.isna().any()].tolist()
-    numeric_columns = list(X.select_dtypes(['float','int']).columns)
-    if impute_method == 'Zero':
-        # X = X.fillna(0)
-        for col in nan_colns: 
-            if(col in numeric_columns):
-                X[col].fillna(0, inplace=True)
-    elif impute_method == 'Mean':
-        for col in nan_colns: 
-            if(col in numeric_columns):
-                X[col].fillna(value=X[col].mean(), inplace=True)
-    elif impute_method == 'Median':
-        for col in nan_colns:
-            if(col in numeric_columns):
-                X[col].fillna(value=X[col].median(), inplace=True)
-    elif impute_method == 'DropNans':
-        data_size1 = X.size
-        X = X.dropna()
-        data_size2 = X.size
-        st.write('%d values removed from the dataset' %(np.abs(data_size2-data_size1)))
-    st.session_state['house_df'] = X
-    return X
+#     Input: 
+#     - df is dataset in pandas dataframe
+#     - impute_method = {'Zero', 'Mean', 'Median','DropNans'}
+#     Output: pandas dataframe df
+#     """
+#     df=df.dropna()
+#     X = df.copy()
+#     nan_colns = X.columns[X.isna().any()].tolist()
+#     numeric_columns = list(X.select_dtypes(['float','int']).columns)
+#     if impute_method == 'Zero':
+#         # X = X.fillna(0)
+#         for col in nan_colns: 
+#             if(col in numeric_columns):
+#                 X[col].fillna(0, inplace=True)
+#     elif impute_method == 'Mean':
+#         for col in nan_colns: 
+#             if(col in numeric_columns):
+#                 X[col].fillna(value=X[col].mean(), inplace=True)
+#     elif impute_method == 'Median':
+#         for col in nan_colns:
+#             if(col in numeric_columns):
+#                 X[col].fillna(value=X[col].median(), inplace=True)
+#     elif impute_method == 'DropNans':
+#         data_size1 = X.size
+#         X = X.dropna()
+#         data_size2 = X.size
+#         st.write('%d values removed from the dataset' %(np.abs(data_size2-data_size1)))
+#     st.session_state['house_df'] = X
+#     return X
 
 def remove_outliers(df, features, outlier_removal_method=None):
     """
@@ -486,13 +486,13 @@ if df is not None:
             print(e)
 
     # Display original dataframe
-    st.markdown('## 3. View initial data with missing values or invalid inputs')
-    st.dataframe(df)
+    # st.markdown('## 3. View initial data with missing values or invalid inputs')
+    # st.dataframe(df)
 
-    numeric_columns = list(df.select_dtypes(['float','int']).columns)
+    # numeric_columns = list(df.select_dtypes(['float','int']).columns)
 
-    # Show summary of missing values including 
-    missing_data_summary = summarize_missing_data(df)
+    # # Show summary of missing values including 
+    # missing_data_summary = summarize_missing_data(df)
 
     # Remove param
     st.markdown('### 4. Remove irrelevant/useless features')
@@ -506,18 +506,18 @@ if df is not None:
     # Display updated dataframe
     st.dataframe(df)
 
-    # Impute features
-    st.markdown('### 5. Impute data')
-    st.markdown('Transform missing values to 0, mean, or median')
+    # # Impute features
+    # st.markdown('### 5. Impute data')
+    # st.markdown('Transform missing values to 0, mean, or median')
 
-    # Use selectbox to provide impute options {'Zero', 'Mean', 'Median'}
-    impute_method = st.selectbox(
-        'Select imputation method',
-        ('Zero', 'Mean', 'Median','DropNans')
-    )
+    # # Use selectbox to provide impute options {'Zero', 'Mean', 'Median'}
+    # impute_method = st.selectbox(
+    #     'Select imputation method',
+    #     ('Zero', 'Mean', 'Median','DropNans')
+    # )
 
-    # Call impute_dataset function to resolve data handling/cleaning problems
-    df = impute_dataset(df, impute_method)
+    # # Call impute_dataset function to resolve data handling/cleaning problems
+    # df = impute_dataset(df, impute_method)
     
     # Display updated dataframe
     st.markdown('### Result of the imputed dataframe')
