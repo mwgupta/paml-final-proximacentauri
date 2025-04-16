@@ -1,0 +1,30 @@
+name: Autograding Tests
+'on':
+- push
+- repository_dispatch
+permissions:
+  checks: write
+  actions: read
+  contents: read
+jobs:
+  run-autograding-tests:
+    runs-on: ubuntu-latest
+    if: github.actor != 'github-classroom[bot]'
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    - name: Run test suite
+      id: run-test-suite
+      uses: classroom-resources/autograding-command-grader@v1
+      with:
+        test-name: Run test suite
+        setup-command: sudo -H pip3 install pytest streamlit plotly scikit-learn matplotlib
+        command: pytest
+        timeout: 10
+        max-score: 12
+    - name: Autograding Reporter
+      uses: classroom-resources/autograding-grading-reporter@v1
+      env:
+        RUN-TEST-SUITE_RESULTS: "${{steps.run-test-suite.outputs.result}}"
+      with:
+        runners: run-test-suite

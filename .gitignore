@@ -1,0 +1,9 @@
+__pycache__/
+.pytest_cache/
+pages/__pycache__/
+environment.yml
+.DS_Store
+*.pytest_cache
+*.__pycache__
+*.pyc
+pages/__pycache__/
