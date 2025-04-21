@@ -7,7 +7,7 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 #############################################
 
-st.markdown("# Practical Applications of Machine Learning (PAML)")
+# st.markdown("# Practical Applications of Machine Learning (PAML)")
 
 #############################################
 
