@@ -17,7 +17,7 @@ st.markdown("### PAML Final - Predicting Mortgage Propensity Scores Using Regres
 
 #############################################
 
-st.markdown('# Explore Dataset')
+st.markdown('# Explore/Preprocess Dataset')
 
 #############################################
 
@@ -245,41 +245,44 @@ def remove_outliers(df, features, outlier_removal_method=None):
 
 def one_hot_encode_feature(df, features):
     """
-    This function performs one-hot-encoding on the given features
+    This function performs one-hot encoding on the given features,
+    removes the original columns, and ensures one-hot columns are integers (0/1).
 
     Input: 
         - df: the pandas dataframe
         - features: the feature(s) to perform one-hot-encoding
     Output: 
-        - df: dataframe with one-hot-encoded feature
+        - df: dataframe with one-hot-encoded features as integers
     """
-    df=df.dropna()
+    df = df.dropna()
 
-    for feat in features:
-        encoded_feature_df = pd.DataFrame({feat: df[feat]})
-        df = pd.get_dummies(df, columns=[feat])
-        df = pd.concat([df, encoded_feature_df], axis=1)
-    st.write('Features {} has been one-hot encoded.'.format(features))
+    # One-hot encode the selected features
+    dummies = pd.get_dummies(df[features], drop_first=False).astype(int)
 
+    # Drop original categorical columns
+    df = df.drop(columns=features)
+
+    # Concatenate encoded columns back into DataFrame
+    df = pd.concat([df, dummies], axis=1)
+
+    st.write(f'Features {features} have been one-hot encoded.')
     st.session_state['house_df'] = df
     return df
 
 def integer_encode_feature(df, features):
     """
-    This function performs integer-encoding on the given features
+    This function performs integer-encoding on the given features and drops the originals.
 
     Input: 
         - df: the pandas dataframe
         - features: the feature(s) to perform integer-encoding
     Output: 
-        - df: dataframe with integer-encoded feature
+        - df: dataframe with integer-encoded feature(s)
     """
-    df=df.dropna()
-    for feat in features:
-        enc = OrdinalEncoder()
-        df[[feat+'_int']] = enc.fit_transform(df[[feat]])
-    st.write('Feature {} has been integer encoded.'.format(features))
+    enc = OrdinalEncoder()
+    df[features] = enc.fit_transform(df[features])
     
+    st.write(f'Features {features} have been integer encoded.')
     st.session_state['house_df'] = df
     return df
 
@@ -526,7 +529,7 @@ if df is not None:
 ############################################# PREPROCESS DATA #############################################
     # Handling Text and Categorical Attributes
     st.markdown('### 6. Handling Text and Categorical Attributes')
-    string_columns = list(df.select_dtypes(['object']).columns)
+    string_columns = list(set(df.columns) - {'session_id', 'pages_viewed', 'time_on_site_sec', 'propensity_score'})
 
     int_col, one_hot_col = st.columns(2)
 
