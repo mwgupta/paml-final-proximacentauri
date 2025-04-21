@@ -94,7 +94,7 @@ class LinearRegression(object) :
 
         self.W = self.W.reshape(-1, 1)
         self.W = self.W - self.learning_rate * dW 
-        return self
+        return cost
     
     # Checkpoint 4
     def fit(self, X, Y): 
@@ -114,7 +114,8 @@ class LinearRegression(object) :
         self.W = np.zeros((X.shape[1] + 1, 1))
 
         for i in range(self.num_iterations):
-            self.update_weights()
+            cost = self.update_weights()
+            st.write('Iteration {}/{}: Loss = {}'.format(i+1, self.num_iterations, cost))
         return self
     
     # Helper function
@@ -217,12 +218,14 @@ class PolynomailRegression(LinearRegression):
 
         self.W = np.zeros((num_poly_features, 1))
 
-        for _ in range(self.num_iterations):
+        for i in range(self.num_iterations):
             Y_pred = self.predict(X)
             dW = - (2 * (X_normalize.T).dot(Y - Y_pred) ) / num_examples
             self.W = self.W - self.learning_rate * dW  
             cost= np.sqrt(np.sum(np.power(Y-Y_pred,2))/len(Y_pred))
             self.cost_history.append(cost)
+            st.write('Iteration {}/{}: Loss = {}'.format(i, self.num_iterations, cost))
+
         return self
     
     # Checkpoint 7
@@ -615,6 +618,8 @@ if df is not None:
         for model_name in inspect_models:
             weights_dict = trained_models[model_name].get_weights(model_name, feature_input_select)
 
+    st.write('Model Coefficients:, ', weights_dict)
+
     # Inspect model cost
     st.markdown('## Inspect model cost')
 
@@ -637,6 +642,8 @@ if df is not None:
                                     value=(0, len(cost_history)))
             st.write("You selected : %d - %d"%(x_range[0],x_range[1]))
             cost_history_tmp = cost_history[x_range[0]:x_range[1]]
+
+            st.write('Cost history:', cost_history_tmp)
             
             fig.add_trace(go.Scatter(x=np.arange(x_range[0],x_range[1],1),
                         y=cost_history_tmp, mode='markers', name=inspect_model_cost), row=1, col=1)

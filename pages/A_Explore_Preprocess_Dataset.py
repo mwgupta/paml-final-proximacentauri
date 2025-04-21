@@ -562,7 +562,7 @@ if df is not None:
                 df = one_hot_encode_feature(df, selected_cols)
 
     # Show updated dataset
-    st.write(df)
+    st.write(st.session_state['house_df']) # TODO: not saving and printing correctly
 
     # Sacling features
     st.markdown('### 7. Feature Scaling')
@@ -586,7 +586,8 @@ if df is not None:
             df = scale_features(df, scale_features_select, scaling_method)
 
     # Display updated dataframe
-    st.dataframe(df)
+    # st.dataframe(df)
+    st.write(df)
 
     # Create New Features
     st.markdown('## 8. Create New Features')
