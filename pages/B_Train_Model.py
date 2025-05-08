@@ -275,6 +275,10 @@ class RidgeRegression(LinearRegression):
         dW = - ( 2 * ( X_normalized.T ).dot( self.Y - Y_pred )  +  2 * self.l2_penalty * self.W ) / num_examples
         self.W = self.W - self.learning_rate * dW
 
+        # added cost history
+        cost = np.sqrt(np.sum(np.power(self.Y - Y_pred, 2)) / num_examples)
+        self.cost_history.append(cost)
+
         return self
 
 # Lasso Regression 
@@ -303,6 +307,11 @@ class LassoRegression(LinearRegression):
             self.W = self.W.reshape(-1, 1)
             dW = - (2 * X_normalized.T.dot(self.Y - Y_pred) - self.l1_penalty * np.sign(self.W)) / num_examples
             self.W = self.W - self.learning_rate * dW
+
+            # added cost history
+            cost = np.sqrt(np.sum(np.power(self.Y - Y_pred, 2)) / num_examples)
+            self.cost_history.append(cost)
+
             return self 
 
 # Helper functions
