@@ -90,7 +90,6 @@ class LinearRegression(object) :
 
         dW = - (2 * (X_normalized.T).dot(self.Y - Y_pred)) / num_examples
         cost= np.sqrt(np.sum(np.power(self.Y-Y_pred,2))/num_examples)
-        self.cost_history.append(cost)
 
         self.W = self.W.reshape(-1, 1)
         self.W = self.W - self.learning_rate * dW 
@@ -115,6 +114,8 @@ class LinearRegression(object) :
 
         for i in range(self.num_iterations):
             cost = self.update_weights()
+            self.cost_history.append(cost)
+            assert self.cost_history != []
             st.write('Iteration {}/{}: Loss = {}'.format(i+1, self.num_iterations, cost))
         return self
     
@@ -249,10 +250,11 @@ class PolynomailRegression(LinearRegression):
 # Ridge Regression 
 class RidgeRegression(LinearRegression): 
     def __init__(self, learning_rate, num_iterations, l2_penalty): 
-        self.l2_penalty = l2_penalty 
+        super().__init__(learning_rate, num_iterations)
+        self.l2_penalty = l2_penalty
 
-        # invoking the __init__ of the parent class
-        LinearRegression.__init__(self, learning_rate, num_iterations)
+        # # invoking the __init__ of the parent class
+        # LinearRegression.__init__(self, learning_rate, num_iterations)
 
     # Checkpoint 8
     def update_weights(self):      
@@ -277,17 +279,17 @@ class RidgeRegression(LinearRegression):
 
         # added cost history
         cost = np.sqrt(np.sum(np.power(self.Y - Y_pred, 2)) / num_examples)
-        self.cost_history.append(cost)
 
-        return self
+        return cost
 
 # Lasso Regression 
 class LassoRegression(LinearRegression): 
     def __init__(self, learning_rate, num_iterations, l1_penalty): 
-        self.l1_penalty = l1_penalty 
+        super().__init__(learning_rate, num_iterations)
+        self.l1_penalty = l1_penalty
 
-        # invoking the __init__ of the parent class
-        LinearRegression.__init__(self, learning_rate, num_iterations)
+        # # invoking the __init__ of the parent class
+        # LinearRegression.__init__(self, learning_rate, num_iterations)
 
     # Checkpoint 9
     def update_weights(self):      
@@ -310,9 +312,8 @@ class LassoRegression(LinearRegression):
 
             # added cost history
             cost = np.sqrt(np.sum(np.power(self.Y - Y_pred, 2)) / num_examples)
-            self.cost_history.append(cost)
 
-            return self 
+            return cost
 
 # Helper functions
 def load_dataset(filepath):
