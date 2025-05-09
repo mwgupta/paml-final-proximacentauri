@@ -358,14 +358,25 @@ if df is not None:
 
     st.session_state['target'] = feature_predict_select
 
-    # Select input features
-    feature_input_select = st.multiselect(
-        label='Select features for regression input',
-        options=[f for f in list(df.select_dtypes(
-            include='number').columns) if f != feature_predict_select],
-        key='feature_multiselect'
+    all_numeric_feats = [f for f in df.select_dtypes(include='number').columns
+                        if f != feature_predict_select]
+
+    # prepend a special entry so the user can grab everything in one click
+    UI_ALL_TAG = "(All numeric features)"          # display label
+    feature_choices = [UI_ALL_TAG] + all_numeric_feats
+
+    # if the user clicks the “all” tag we pre-select every real feature
+    raw_selection = st.multiselect(
+        label="Select features for regression input",
+        options=feature_choices,
+        key="feature_multiselect",
     )
 
+    # convert UI selection → actual feature list
+    if UI_ALL_TAG in raw_selection:
+        feature_input_select = all_numeric_feats          # take everything
+    else:
+        feature_input_select = raw_selection              # manual subset
     st.session_state['feature'] = feature_input_select
 
     st.write('You selected input {} and output {}'.format(
@@ -375,6 +386,8 @@ if df is not None:
     X = df.loc[:, df.columns.isin(feature_input_select)]
     Y = df.loc[:, df.columns.isin([feature_predict_select])]
 
+    st.write("TRAIN-PAGE ①  X.shape before np →", X.shape,
+         "| feature_input_select =", feature_input_select)
     # Split train/test
     st.markdown('## Split dataset into Train/Test sets')
     st.markdown(
@@ -393,6 +406,15 @@ if df is not None:
     X = np.asarray(X.values.tolist()) 
     Y = np.asarray(Y.values.tolist()) 
     X_train, X_val, y_train, y_val = split_dataset(X, Y, split_number)
+
+    st.session_state['X_train'] = X_train
+    st.session_state['X_val']   = X_val
+    st.session_state['y_train'] = y_train
+    st.session_state['y_val']   = y_val
+
+    st.write("TRAIN-PAGE ②  X_train.shape saved =", X_train.shape,
+         "X_val.shape saved =", X_val.shape)
+
     train_percentage = (len(X_train) / (len(X_train)+len(y_val)))*100
     test_percentage = (len(X_val)) / (len(X_train)+len(y_val))*100
 

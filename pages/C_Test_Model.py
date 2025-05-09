@@ -97,10 +97,21 @@ def compute_eval_metrics(X, y_true, model, metrics):
         - metric_dict: a dictionary contains the computed metrics of the selected model, with the following structure:
             - {metric1: value1, metric2: value2, ...}
     """
-    metric_dict = {}
+    if isinstance(X, (pd.DataFrame, pd.Series)):
+        X = X.to_numpy()
+    if isinstance(y_true, (pd.DataFrame, pd.Series)):
+        y_true = y_true.to_numpy()
+
+    # ensure 2-D shapes (n_samples, n_features) / (n_samples, 1)
+    if X.ndim == 1:
+        X = X.reshape(-1, 1)
+    if y_true.ndim == 1:
+        y_true = y_true.reshape(-1, 1)
+
     y_pred = model.predict(X)
-    for metric in metrics:
-        metric_dict[metric] = METRICS_MAP[metric](y_true, y_pred)
+
+    metric_dict = {metric: METRICS_MAP[metric](y_true, y_pred)
+                   for metric in metrics}
     return metric_dict
 
 
@@ -170,6 +181,7 @@ def restore_data(df):
     if ('X_train' in st.session_state):
         X_train = st.session_state['X_train']
         y_train = st.session_state['y_train']
+        st.write("TEST-PAGE ③  Restored X_train.shape =", X_train.shape)
         st.write('Restored train data ...')
     if ('X_val' in st.session_state):
         X_val = st.session_state['X_val']
@@ -252,7 +264,7 @@ else:
 if df is not None:
     # Restore dataset splits
     X_train, X_val, y_train, y_val = restore_data(df)
-
+    st.write(X_train.shape, X_val.shape, y_train.shape, y_val.shape)
     st.markdown("## Get Performance Metrics")
     metric_options = ['mean_absolute_error',
                       'root_mean_squared_error', 'r2_score']
@@ -308,6 +320,9 @@ if df is not None:
 
                 train_result_dict = {}
                 val_result_dict = {}
+                st.write("TEST-PAGE ④  About to eval:"
+                    " X_train.shape =", X_train.shape,
+                    "X_val.shape =", X_val.shape)
                 for idx, model in enumerate(models):
                     train_result_dict[model_select[idx]] = compute_eval_metrics(
                         X_train, y_train, model, metric_select)
