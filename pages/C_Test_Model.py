@@ -1,173 +1,207 @@
-import numpy as np                  
-import pandas as pd                  
+import numpy as np                   
+import pandas as pd               
 import streamlit as st                 
-from pages.B_Train_Model import split_dataset
 import random
 import plotly.graph_objects as go
-from plotly.subplots import make_subplots
+from helper_functions import fetch_dataset
+from pages.B_Train_Model import split_dataset
+from sklearn.metrics import confusion_matrix
+
+random.seed(10)
 #############################################
 
-# st.markdown("# Practical Applications of Machine Learning (PAML)")
+st.markdown("# Practical Applications of Machine Learning (PAML)")
 
 #############################################
 
-st.markdown("### PAML Final - Predicting Mortgage Propensity Scores Using Regression")
+st.markdown(
+    "### Homework 2 - Predicting Product Review Sentiment Using Classification")
 
 #############################################
 
 st.title('Test Model')
 
 #############################################
-# Checkpoint 10
-def rmse(y_true, y_pred):
+
+# Checkpoint 19
+def compute_accuracy(prediction_labels, true_labels):    
     """
-    This function computes the root mean squared error by measuring the 
-    difference between predicted and actual values using Euclidean distance.
-
-    Input:
-        - y_true: true targets
-        - y_pred: predicted targets
-    Output:
-        - error: root mean squared error
+    Compute classification accuracy
+    Input
+        - prediction_labels (numpy): predicted product sentiment
+        - true_labels (numpy): true product sentiment
+    Output
+        - accuracy (float): accuracy percentage (0-100%)
     """
-    error=0
-    
-    # Add code here.
-    num_examples = y_true.shape[0]
-    error = np.sqrt(np.sum(np.power(y_true-y_pred,2))/num_examples)
-    return error
+    accuracy=None
+    try:
+        # Add code here
+                
+        corr_predictions = np.sum(prediction_labels == true_labels)
+        tot_predictions = len(true_labels)
+        accuracy = corr_predictions / tot_predictions
 
-# Checkpoint 11
-def mae(y_true, y_pred):
+        st.write('compute_accuracy function has not been completed. Remove this statement upon completion.')
+    except ValueError as err:
+        st.write({str(err)})
+    return accuracy
+
+# Checkpoint 20
+def compute_precison_recall(prediction_labels, true_labels, print_summary=False):
     """
-    Measures the mean absolute error (MAE) between predicted and actual values.
-
-    Input:
-        - y_true: true targets
-        - y_pred: predicted targets
-    Output:
-        - error: mean absolute error
+    Compute precision and recall 
+    Input
+        - prediction_labels (numpy): predicted product sentiment
+        - true_labels (numpy): true product sentiment
+    Output
+        - precision (float): precision score = TP/TP+FP
+        - recall (float): recall score = TP/TP+FN
     """
-    error=0
-    
-    # Add code here.
-    num_examples = y_true.shape[0]
-    error = (np.sum(np.abs(y_true-y_pred))) / num_examples
-    return error
+    precision=None
+    recall=None
+    try:
+        # Add code here
+        
+        pred_labels = np.array(prediction_labels)
+        actual_labels = np.array(true_labels)
+        
+        TP = np.sum((prediction_labels == 1) & (true_labels == 1))
+        FP = np.sum((prediction_labels == 1) & (true_labels == 0))
+        FN = np.sum((prediction_labels == 0) & (true_labels == 1))
+        
+        precision = TP / (TP + FP) if (TP + FP) > 0 else 0
+        
+        recall = TP / (TP + FN) if (TP + FN) > 0 else 0
+        
+        if print_summary:
+            st.write(f"True Positives: {TP}")
+            st.write(f"False Positives: {FP}")
+            st.write(f"False Negatives: {FN}")
+            st.write(f"Precision: {precision:.3f}")
+            st.write(f"Recall: {recall:.3f}")
 
-# Checkpoint 12
-def r2(y_true, y_pred):
+        st.write('compute_precison_recall function has not been completed. Remove this statement upon completion.')
+    except ValueError as err:
+        st.write({str(err)})
+
+    return precision, recall
+
+# Helper Function
+def compute_eval_metrics(X, y_true, model, metrics, print_summary=False):
     """
-    Compute the coefficient of determination (R2 score) which 
-    represents the proportion of variance in predicted values 
-    that can be explained by the input features.
+    This function computes one or more metrics (precision, recall, accuracy) using the model
 
-    Input:
-        - y_true: true targets
-        - y_pred: predicted targets
-    Output:
-        - error: r2 score
-    """
-    error=0
-    
-    # Add code here.
-    tss = np.sum(np.power(y_true - np.mean(y_true),2))
-    rss = np.sum(np.power(y_true - y_pred,2))
-    error = 1 - (rss/tss)
-    return error
-
-# Used to access model performance in dictionaries
-METRICS_MAP = {
-    'mean_absolute_error': mae,
-    'root_mean_squared_error': rmse,
-    'r2_score': r2
-}
-
-# Helper function
-def compute_eval_metrics(X, y_true, model, metrics):
-    """
-    This function checks the metrics of the models
-
-    Input:
+    Inputs:
         - X: pandas dataframe with training features
         - y_true: pandas dataframe with true targets
         - model: the model to evaluate
-        - metrics: the metrics to evlauate performance 
-    Output:
+        - metrics: the metrics to evaluate performance (string); 'precision', 'recall', 'accuracy'
+    Outputs:
         - metric_dict: a dictionary contains the computed metrics of the selected model, with the following structure:
             - {metric1: value1, metric2: value2, ...}
     """
-    if isinstance(X, (pd.DataFrame, pd.Series)):
-        X = X.to_numpy()
-    if isinstance(y_true, (pd.DataFrame, pd.Series)):
-        y_true = y_true.to_numpy()
+    metric_dict = {'precision': -1,
+                   'recall': -1,
+                   'accuracy': -1}
+    try:
+        # Predict the product sentiment using the input model and data X
+        y_pred = model.predict(X)
 
-    # ensure 2-D shapes (n_samples, n_features) / (n_samples, 1)
-    if X.ndim == 1:
-        X = X.reshape(-1, 1)
-    if y_true.ndim == 1:
-        y_true = y_true.reshape(-1, 1)
+        # Compute the evaluation metrics in 'metrics = ['precision', 'recall', 'accuracy']' using the predicted sentiment
+        precision, recall = compute_precison_recall(y_pred, y_true.to_numpy())
+        accuracy = compute_accuracy(y_pred, y_true.to_numpy())
 
-    y_pred = model.predict(X)
-
-    metric_dict = {metric: METRICS_MAP[metric](y_true, y_pred)
-                   for metric in metrics}
+        if 'precision' in metrics:
+            metric_dict['precision'] = precision
+        if 'recall' in metrics:
+            metric_dict['recall'] = recall
+        if 'accuracy' in metrics:
+            metric_dict['accuracy'] = accuracy
+    except ValueError as err:
+        st.write({str(err)})
     return metric_dict
 
 
-def plot_learning_curve(X_train, X_val, y_train, y_val, trained_model, metrics, model_name):
-    """
-    This function plots the learning curve. Note that the learning curve is calculated using 
-    increasing sizes of the training samples
-    Input:
-        - X_train: training features
-        - X_val: validation/test features
-        - y_train: training targets
-        - y_val: validation/test targets
-        - trained_model: the trained model to be calculated learning curve on
-        - metrics: a list of metrics to be computed
-        - model_name: the name of the model being checked
-    Output:
-        - fig: the plotted figure
-        - df: a dataframe containing the train and validation errors, with the following keys:
-            - df[metric_fn.__name__ + " Training Set"] = train_errors
-            - df[metric_fn.__name__ + " Validation Set"] = val_errors
-    """
-    fig = make_subplots(rows=len(metrics), cols=1,
-                        shared_xaxes=True, vertical_spacing=0.1)
-    df = pd.DataFrame()
-    for i, metric in enumerate(metrics):
-        metric_fn = METRICS_MAP[metric]
-        train_errors, val_errors = [], []
-        for m in range(500, len(X_train)+1, 500):
-            trained_model.fit(X_train[:m], y_train[:m])
-            y_train_predict = trained_model.predict(X_train[:m])
-            y_val_predict = trained_model.predict(X_val)
-            train_errors.append(metric_fn(y_train[:m], y_train_predict))
-            val_errors.append(metric_fn(y_val, y_val_predict))
+# Helper Function
+def plot_decision_boundary(X_2d, y, models):
+    try:
+        st.markdown('### Visualizing the Classification Decision Boundary')
+        st.write(
+            "To better understand the trained classifiers, we\'ll visualize the features where the classifier switches from predicting a positive review to a negative review."
+            " This is called the decision boundary.\n\n"
+        )
+        
+        num_comps = X_2d.shape[-1]
+        # pick two dimensions to plot
+        feat_plot0 = st.slider(
+            'First feature to plot',
+            0, num_comps-1, 7
+        )
+        feat_plot1 = st.slider(
+            'Second feature to plot',
+            0, num_comps-1, 40
+        )
 
-        fig.add_trace(go.Scatter(x=np.arange(500, len(X_train)+1, 500),
-                      y=train_errors, name=metric_fn.__name__+" Train"), row=i+1, col=1)
-        fig.add_trace(go.Scatter(x=np.arange(500, len(X_train)+1, 500),
-                      y=val_errors, name=metric_fn.__name__+" Val"), row=i+1, col=1)
+        st.write(f'You selected: features {feat_plot0} and {feat_plot1} to plot.')
+        
 
-        fig.update_xaxes(title_text="Training Set Size")
-        fig.update_yaxes(title_text=metric_fn.__name__, row=i+1, col=1)
-        fig.update_layout(title=model_name)
+        for model in models:
+            if model.model_name == 'Naive Bayes':
+                # features must be positive for naive bayes
+                X_plot = X_2d - X_2d.min()
+            else:
+                X_plot = X_2d
+            boundary = model.decision_boundary([feat_plot0, feat_plot1])
 
-        df[metric_fn.__name__ + " Training Set"] = train_errors
-        df[metric_fn.__name__ + " Validation Set"] = val_errors
-    return fig, df
+            # Add scatter plot for data points
+            fig = go.Figure()
+            fig.add_trace(
+                go.Scatter(
+                    x=X_plot[:, feat_plot0][y == 1], y=X_plot[:, feat_plot1][y == 1],
+                    mode='markers',
+                    marker=dict(color='blue'),
+                    name="y = 1"  # Legend name for this class
+                )
+            )
+            
+            fig.add_trace(
+                go.Scatter(
+                    x=X_plot[:, feat_plot0][y == -1], y=X_plot[:, feat_plot1][y == -1],
+                    mode='markers',
+                    marker=dict(color='red'),
+                    name="y = -1"  # Legend name for this class
+                )
+            )
+            # Add decision boundary as a line plot
+            fig.add_trace(
+                go.Scatter(
+                    x=[boundary[0], min(X_plot[:, feat_plot0])],
+                    y=[min(X_plot[:, feat_plot1]), boundary[1]],
+                    mode='lines+markers',
+                    name='Decision Boundary',
+                    marker=dict(color='green')
+                ),
+            )
+
+            fig.update_layout(
+                title=f"Decision boundary for {model.model_name}",
+                xaxis_title=f"PCA Feature {feat_plot0}",
+                yaxis_title=f"PCA Feature {feat_plot1}"
+            )
+
+            st.plotly_chart(fig)
+    except ValueError as err:
+        st.write({str(err)})
 
 # Helper function
-def restore_data(df):
+def restore_data_splits(df):
     """
     This function restores the training and validation/test datasets from the training page using st.session_state
                 Note: if the datasets do not exist, re-split using the input df
 
-    Input: 
+    Inputs: 
         - df: the pandas dataframe
-    Output: 
+    Outputs: 
         - X_train: the training features
         - X_val: the validation/test features
         - y_train: the training targets
@@ -177,175 +211,110 @@ def restore_data(df):
     y_train = None
     X_val = None
     y_val = None
-    # Restore train/test dataset
-    if ('X_train' in st.session_state):
-        X_train = st.session_state['X_train']
-        y_train = st.session_state['y_train']
-        st.write("TEST-PAGE ③  Restored X_train.shape =", X_train.shape)
-        st.write('Restored train data ...')
-    if ('X_val' in st.session_state):
-        X_val = st.session_state['X_val']
-        y_val = st.session_state['y_val']
-        st.write('Restored test data ...')
-    if('target' in st.session_state):
-        feature_predict_select = st.session_state['target']
-        st.write('Restored target ...')
-    if('feature' in st.session_state):
-        feature_input_select = st.session_state['feature']
-        st.write('Restored feature input ...')
-        
-    if (X_train is None):
-        # Select variable to explore
-        numeric_columns = list(df.select_dtypes(include='number').columns)
-        # Select variable to predict
-        feature_predict_select = st.selectbox(
-            label='Select variable to predict',
-            options=list(df.select_dtypes(include='number').columns),
-            key='feature_selectbox',
-            index=8
-        )
+    try:
+        # Restore train/test dataset
+        if ('X_train' in st.session_state):
+            X_train = st.session_state['X_train']
+            y_train = st.session_state['y_train']
+            st.write('Restored train data ...')
+        if ('X_val' in st.session_state):
+            X_val = st.session_state['X_val']
+            y_val = st.session_state['y_val']
+            st.write('Restored test data ...')
+        if (X_train is None):
+            # Select variable to explore
+            numeric_columns = list(df.select_dtypes(include='number').columns)
+            feature_select = st.selectbox(
+                label='Select variable to predict',
+                options=numeric_columns,
+            )
+            
+            # Split train/test
+            st.markdown(
+                '### Enter the percentage of test data to use for training the model')
+            number = st.number_input(
+                label='Enter size of test set (X%)', min_value=0, max_value=100, value=30, step=1)
 
-        st.session_state['target'] = feature_predict_select
-
-        # Select input features
-        feature_input_select = st.multiselect(
-            label='Select features for regression input',
-            options=[f for f in list(df.select_dtypes(
-                include='number').columns) if f != feature_predict_select],
-            key='feature_multiselect'
-        )
-
-        st.session_state['feature'] = feature_input_select
-
-        st.write('You selected input {} and output {}'.format(
-            feature_input_select, feature_predict_select))
-
-        df = df.dropna()
-        X = df.loc[:, df.columns.isin(feature_input_select)]
-        Y = df.loc[:, df.columns.isin([feature_predict_select])]
-
-        # Convert to numpy arrays
-        X = np.asarray(X.values.tolist()) 
-        Y = np.asarray(Y.values.tolist()) 
-
-        # Split train/test
-        st.markdown(
-            '### Enter the percentage of test data to use for training the model')
-        number = st.number_input(
-            label='Enter size of test set (X%)', min_value=0, max_value=100, value=30, step=1)
-
-        X_train, X_val, y_train, y_val = split_dataset(X, Y, number)
-        st.write('Restored training and test data ...')
+            X_train, X_val, y_train, y_val = split_dataset(df, number, feature_select, 'TF-IDF')
+            st.write('Restored training and test data ...')
+    except ValueError as err:
+        st.write({str(err)})
     return X_train, X_val, y_train, y_val
 
-def load_dataset(filepath):
-    """
-    This function uses the filepath (string) a .csv file locally on a computer 
-    to import a dataset with pandas read_csv() function. Then, store the 
-    dataset in session_state.
-
-    Input: data is the filename or path to file (string)
-    Output: pandas dataframe df
-    """
-    data = pd.read_csv(filepath)
-    st.session_state['house_df'] = data
-    return data
-
-random.seed(10)
 ###################### FETCH DATASET #######################
 df = None
-if('house_df' in st.session_state):
-    df = st.session_state['house_df']
-else:
-    filepath = st.file_uploader('Upload a Dataset', type=['csv', 'txt'])
-    if(filepath):
-        df = load_dataset(filepath)
+df = fetch_dataset()
 
 if df is not None:
     # Restore dataset splits
-    X_train, X_val, y_train, y_val = restore_data(df)
-    st.write(X_train.shape, X_val.shape, y_train.shape, y_val.shape)
-    st.markdown("## Get Performance Metrics")
-    metric_options = ['mean_absolute_error',
-                      'root_mean_squared_error', 'r2_score']
-    
-    # Select multiple metrics for evaluation
-    metric_select = st.multiselect(
-        label='Select metrics for regression model evaluation',
-        options=metric_options,
-    )
-    if (metric_select):
-        st.session_state['metric_select'] = metric_select
-        st.write('You selected the following metrics: {}'.format(metric_select))
+    X_train, X_val, y_train, y_val = restore_data_splits(df)
 
-    regression_methods_options = ['Multiple Linear Regression',
-                                  'Polynomial Regression', 'Ridge Regression']
+    st.markdown("## Get Performance Metrics")
+    metric_options = ['precision', 'recall', 'accuracy']
+
+    classification_methods_options = ['Logistic Regression',
+                                      'Naive Bayes',
+                                      'Support Vector Machine']
+
     trained_models = [
-        model for model in regression_methods_options if model in st.session_state]
+        model for model in classification_methods_options if model in st.session_state]
     st.session_state['trained_models'] = trained_models
 
-    # Select a trained regression model for evaluation
+    # Select a trained classification model for evaluation
     model_select = st.multiselect(
-        label='Select trained regression models for evaluation',
+        label='Select trained classification models for evaluation',
         options=trained_models
     )
+    if (model_select):
+        st.write(
+            'You selected the following models for evaluation: {}'.format(model_select))
 
-    plot_options = ['Learning Curve', 'Metric Results']
-
-    review_plot = st.multiselect(
-        label='Select plot option(s)',
-        options=plot_options
-    )
-    
-    st.write('You selected the following models for evaluation: {}'.format(model_select))
-    if (model_select and review_plot):
-
-        eval_button = st.button('Evaluate your selected regression models')
+        eval_button = st.button('Evaluate your selected classification models')
 
         if eval_button:
             st.session_state['eval_button_clicked'] = eval_button
 
-        #if 'eval_button_clicked' in st.session_state and st.session_state['eval_button_clicked']:
+        if 'eval_button_clicked' in st.session_state and st.session_state['eval_button_clicked']:
+            st.markdown('## Review Classification Model Performance')
 
-            if 'Learning Curve' in review_plot:
-                for model in model_select:
-                    trained_model = st.session_state[model]
-                    fig, df = plot_learning_curve(
-                        X_train, X_val, y_train, y_val, trained_model, metric_select, model)
-                    st.plotly_chart(fig)
+            plot_options = ['Metric Results', 'Decision Boundary']
 
+            review_plot = st.multiselect(
+                label='Select plot option(s)',
+                options=plot_options
+            )
+
+            ############## Task 11: Plot ROC Curves
             if 'Metric Results' in review_plot:
                 models = [st.session_state[model]
                           for model in model_select]
 
                 train_result_dict = {}
                 val_result_dict = {}
-                st.write("TEST-PAGE ④  About to eval:"
-                    " X_train.shape =", X_train.shape,
-                    "X_val.shape =", X_val.shape)
-                for idx, model in enumerate(models):
-                    train_result_dict[model_select[idx]] = compute_eval_metrics(
-                        X_train, y_train, model, metric_select)
-                    val_result_dict[model_select[idx]] = compute_eval_metrics(
-                        X_val, y_val, model, metric_select)
 
-                st.markdown('### Predictions on the training dataset')
-                st.dataframe(train_result_dict)
+                # Select multiple metrics for evaluation
+                metric_select = st.multiselect(
+                    label='Select metrics for classification model evaluation',
+                    options=metric_options,
+                )
+                if (metric_select):
+                    st.session_state['metric_select'] = metric_select
+                    st.write(
+                        'You selected the following metrics: {}'.format(metric_select))
 
-                st.markdown('### Predictions on the validation dataset')
-                st.dataframe(val_result_dict)
+                    for idx, model in enumerate(models):
+                        train_result_dict[model_select[idx]] = compute_eval_metrics(
+                            X_train, y_train, model, metric_select, print_summary=True)
+                        val_result_dict[model_select[idx]] = compute_eval_metrics(
+                            X_val, y_val, model, metric_select, print_summary=True)
 
-    # Deploy Model
+                    st.markdown('### Predictions on the training dataset')
+                    st.dataframe(train_result_dict)
 
-    # Select a model to deploy from the trained models
-    #st.markdown("## Choose your Deployment Model")
-    #model_select = st.selectbox(
-    #    label='Select the model you want to deploy',
-    #    options=st.session_state['trained_models'],
-    #)
-
-    #if (model_select):
-    #    st.write('You selected the model: {}'.format(model_select))
-    #    st.session_state['deploy_model'] = st.session_state[model_select]
-
-    #st.write('Continue to Deploy Model')
+                    st.markdown('### Predictions on the validation dataset')
+                    st.dataframe(val_result_dict)
+        
+            ############## Task 12: Plot Decision Boundary
+            if 'Decision Boundary' in review_plot:
+                models = [st.session_state[model] for model in model_select]
+                plot_decision_boundary(np.array(X_train), np.ravel(y_train), models)
