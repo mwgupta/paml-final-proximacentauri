@@ -99,6 +99,14 @@ class LogisticRegression(object):
         self.learning_rate = learning_rate 
         self.num_iterations = num_iterations 
         self.likelihood_history=[]
+
+    # helper
+    def stable_sigmoid(self, z):
+        return np.where(
+            z >= 0,
+            1 / (1 + np.exp(-z)),
+            np.exp(z) / (1 + np.exp(z))
+        )
     
     # Checkpoint 5
     def predict_probability(self, X):
@@ -114,7 +122,8 @@ class LogisticRegression(object):
             # Add code here
             # st.write('predict_probability function has not been completed. Remove this statement upon completion.')
             z = np.dot(X, self.W) + self.b 
-            y_pred = 1 / (1 + np.exp(-z))
+            # y_pred = 1 / (1 + np.exp(-z))
+            y_pred = self.stable_sigmoid(z)
         except ValueError as err:
             st.write({str(err)})
         return y_pred
@@ -133,13 +142,27 @@ class LogisticRegression(object):
         lp=None
         try:
             # Add code here
-            indicator = (Y==+1)
-            scores = np.dot(X, W)
-            logexp = np.log(1. + np.exp(-scores))
-            # Simple check to prevent overflow
-            mask = np.isinf(logexp)
-            logexp[mask] = -scores[mask]
-            lp = np.sum((indicator-1)*scores - logexp)/len(X)
+            # indicator = (Y==+1)
+            # scores = np.dot(X, W)
+
+            # # logexp = np.log(1. + np.exp(-scores))
+            # # # Simple check to prevent overflow
+            # # mask = np.isinf(logexp)
+            # # logexp[mask] = -scores[mask]
+
+            # logexp = np.where(
+            #     scores > 0,
+            #     np.log(1 + np.exp(-scores)),
+            #     -scores + np.log(1 + np.exp(scores))
+            # )
+
+            # lp = np.sum((indicator-1)*scores - logexp)/len(X)
+
+            z = np.dot(X, W)
+            p = self.stable_sigmoid(z)
+            log_likelihood = Y * np.log(p + 1e-15) + (1 - Y) * np.log(1 - p + 1e-15)
+            lp = np.mean(log_likelihood)
+
         except ValueError as err:
             st.write({str(err)})
         return lp
@@ -157,7 +180,7 @@ class LogisticRegression(object):
         try:
             y_pred = self.predict(self.X)
             
-            dW = (1/self.num_examples)*self.X.T.dot(self.Y - y_pred)
+            dW = (1/self.num_examples)*self.X.T.dot(self.Y - y_pred) # - 2 * 0.1 * self.W # added L2 regularization
             db = (1/self.num_examples)*np.sum(self.Y - y_pred)
             
             self.W += self.learning_rate * dW
