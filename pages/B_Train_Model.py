@@ -670,11 +670,8 @@ class ANN:
     # ──────────────────────────────────────────────────────────────────
     # 1. Initialisation
     # ──────────────────────────────────────────────────────────────────
-    def __init__(self,
-                 input_size: int,
-                 lr: float = 1e-3,
-                 p_dropout: float = 0.20,
-                 seed: int = 42):
+    def __init__(self, input_size, lr=1e-3, p_dropout=0.20,
+                 seed=42, epochs=20, batch_size=1024):
         rng = np.random.default_rng(seed)
 
         # weights (He init for ReLU layers)
@@ -690,9 +687,11 @@ class ANN:
         self.b4 = np.zeros((1, 1))
 
         # hyper-parameters
+        self.epochs, self.batch = epochs, batch_size
         self.lr       = lr
         self.p_drop   = p_dropout
         self.training = True     # toggle False for inference
+        self.likelihood_history = []
 
     # ──────────────────────────────────────────────────────────────────
     # 2. Activation helpers
@@ -860,6 +859,38 @@ class ANN:
         return (self.predict_proba(X) >= threshold).astype(int)
 
 
+    def fit(self, X, y):
+        """
+        Mini-batch SGD for self.epochs, stores −loss in likelihood_history.
+        X : np.ndarray (n, d)
+        y : np.ndarray (n,)  — assumed 0/1
+        """
+        X = X.astype(np.float32)
+        y = y.astype(np.float32).reshape(-1, 1)
+        n = X.shape[0]
+
+        for _ in range(self.epochs):
+            perm = np.random.permutation(n)
+            epoch_loss = 0
+            for i in range(0, n, self.batch):
+                idx = perm[i:i+self.batch]
+                loss = self.training_step(X[idx], y[idx])
+                epoch_loss += loss * len(idx)
+            self.likelihood_history.append(-epoch_loss / n)  # like other models
+        return self
+
+    # ───────────────────────────────────────────────────────────── #
+    # NEW: lightweight weight inspector (for parity with others)
+    def get_weights(self):
+        st.write('-------------------------')
+        st.write('Model Coefficients for Artificial Neural Network')
+        st.write('* Total parameters: {}'.format(
+            self.W1.size + self.W2.size + self.W3.size + self.W4.size))
+        # Return all weights in a list so downstream code works
+        return [self.W1, self.W2, self.W3, self.W4,
+                self.b1, self.b2, self.b3, self.b4]
+
+
 ###################### FETCH DATASET #######################
 df = None
 df = fetch_dataset()
@@ -926,7 +957,8 @@ if df is not None:
 
     classification_methods_options = ['Logistic Regression',
                                       'Naive Bayes', 
-                                      'Support Vector Machine']
+                                      'Support Vector Machine',
+                                      'Artificial Neural Network']
     
     # Collect ML Models of interests
     classification_model_select = st.multiselect(
@@ -1043,6 +1075,42 @@ if df is not None:
             st.write('SVM Model is untrained')
         else:
             st.write('SVM Model trained')
+
+    
+    # Task 8 : Artificial Neural Network
+    if (classification_methods_options[3] in classification_model_select):
+        st.markdown('#### Artificial Neural Network (3-layer MLP)')
+
+        ann_col1, ann_col2, ann_col3 = st.columns(3)
+
+        with ann_col1:
+            ann_lr = st.number_input('Learning rate', 0.0001, 1.0,
+                                     value=0.001, step=0.0001,
+                                     format="%.4f")
+        with ann_col2:
+            ann_epochs = st.number_input('Epochs', 1, 500,
+                                         value=20, step=5)
+        with ann_col3:
+            ann_batch = st.number_input('Batch size', 16, 5000,
+                                        value=1024, step=16)
+
+        if st.button('Train ANN Model'):
+            try:
+                ann_model = ANN(input_size=X_train.shape[1],
+                                lr=ann_lr,
+                                epochs=ann_epochs,
+                                batch_size=ann_batch)
+                ann_model.fit(X_train, y_train)
+                st.session_state['Artificial Neural Network'] = ann_model
+            except Exception as err:
+                st.write(str(err))
+
+        if 'Artificial Neural Network' not in st.session_state:
+            st.write('ANN model is untrained')
+        else:
+            st.write('ANN model trained')
+
+
     
     # Store models in dict
     trained_models={}

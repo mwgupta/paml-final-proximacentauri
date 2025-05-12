@@ -234,7 +234,8 @@ if df is not None:
 
     classification_methods_options = ['Logistic Regression',
                                       'Naive Bayes',
-                                      'Support Vector Machine']
+                                      'Support Vector Machine',
+                                      'Artificial Neural Network']
 
     trained_models = [
         model for model in classification_methods_options if model in st.session_state]
