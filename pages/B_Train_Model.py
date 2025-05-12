@@ -654,6 +654,212 @@ class SVM(object):
             st.write({str(err)})
         return boundary
 
+
+class ANN:
+    """
+    Fully-connected feed-forward net:
+
+        input  → 256 → 128 → 64 → 1-logit → sigmoid → P(default)
+
+    • ReLU activations
+    • Dropout(p=0.20) after first two hidden layers (train-time only)
+    • He initialisation
+    • Manual BCE loss & gradients (no autograd / torch)
+    """
+
+    # ──────────────────────────────────────────────────────────────────
+    # 1. Initialisation
+    # ──────────────────────────────────────────────────────────────────
+    def __init__(self,
+                 input_size: int,
+                 lr: float = 1e-3,
+                 p_dropout: float = 0.20,
+                 seed: int = 42):
+        rng = np.random.default_rng(seed)
+
+        # weights (He init for ReLU layers)
+        self.W1 = rng.normal(0, np.sqrt(2 / input_size), (input_size, 256))
+        self.W2 = rng.normal(0, np.sqrt(2 / 256),       (256, 128))
+        self.W3 = rng.normal(0, np.sqrt(2 / 128),       (128, 64))
+        self.W4 = rng.normal(0, np.sqrt(2 / 64),        (64,  1))
+
+        # biases
+        self.b1 = np.zeros((1, 256))
+        self.b2 = np.zeros((1, 128))
+        self.b3 = np.zeros((1, 64))
+        self.b4 = np.zeros((1, 1))
+
+        # hyper-parameters
+        self.lr       = lr
+        self.p_drop   = p_dropout
+        self.training = True     # toggle False for inference
+
+    # ──────────────────────────────────────────────────────────────────
+    # 2. Activation helpers
+    # ──────────────────────────────────────────────────────────────────
+    @staticmethod
+    def relu(x):
+        return np.maximum(0, x)
+
+    @staticmethod
+    def relu_grad(x):
+        return (x > 0).astype(x.dtype)
+
+    @staticmethod
+    def sigmoid(z):
+        return 1.0 / (1.0 + np.exp(-z))
+
+    # ──────────────────────────────────────────────────────────────────
+    # 3. Forward pass
+    # ──────────────────────────────────────────────────────────────────
+    def forward(self, X):
+        """
+        Returns
+        -------
+        probs : ndarray, shape (batch, 1)
+            σ(logit) = predicted probability of class 1
+        cache : tuple
+            intermediates for back-prop
+        """
+        # Layer 1
+        Z1 = X @ self.W1 + self.b1
+        A1 = self.relu(Z1)
+        D1 = None
+        if self.training:
+            D1 = (np.random.rand(*A1.shape) > self.p_drop).astype(A1.dtype)
+            A1 *= D1
+            A1 /= (1.0 - self.p_drop)
+
+        # Layer 2
+        Z2 = A1 @ self.W2 + self.b2
+        A2 = self.relu(Z2)
+        D2 = None
+        if self.training:
+            D2 = (np.random.rand(*A2.shape) > self.p_drop).astype(A2.dtype)
+            A2 *= D2
+            A2 /= (1.0 - self.p_drop)
+
+        # Layer 3
+        Z3 = A2 @ self.W3 + self.b3
+        A3 = self.relu(Z3)
+
+        # Output
+        Z4    = A3 @ self.W4 + self.b4         # logits
+        probs = self.sigmoid(Z4)               # σ(z)
+
+        cache = (X, Z1, A1, D1,
+                 Z2, A2, D2,
+                 Z3, A3,
+                 Z4, probs)
+        return probs, cache
+
+    # ──────────────────────────────────────────────────────────────────
+    # 4. BCE loss and gradient wrt logits
+    # ──────────────────────────────────────────────────────────────────
+    @staticmethod
+    def bce_loss_and_grad(probs, y, eps=1e-12):
+        """
+        Parameters
+        ----------
+        probs : ndarray, (batch,1) – output of sigmoid
+        y     : ndarray, (batch,1) – binary 0/1 targets
+
+        Returns
+        -------
+        loss         : scalar
+        grad_logits  : ndarray, dL/dZ4  (same shape as probs)
+        """
+        batch = y.shape[0]
+        loss = -(y * np.log(probs + eps) +
+                 (1 - y) * np.log(1 - probs + eps)).mean()
+        grad_logits = (probs - y) / batch       # σ(z)−y
+        return loss, grad_logits
+
+    # ──────────────────────────────────────────────────────────────────
+    # 5. Back-prop + parameter update (one mini-batch)
+    # ──────────────────────────────────────────────────────────────────
+    def backward(self, cache, dZ4):
+        (X, Z1, A1, D1,
+         Z2, A2, D2,
+         Z3, A3,
+         _, _) = cache
+
+        # Layer 4 grads
+        dW4 = A3.T @ dZ4
+        db4 = dZ4.sum(0, keepdims=True)
+        dA3 = dZ4 @ self.W4.T
+
+        # Layer 3
+        dZ3 = dA3 * self.relu_grad(Z3)
+        dW3 = A2.T @ dZ3
+        db3 = dZ3.sum(0, keepdims=True)
+        dA2 = dZ3 @ self.W3.T
+
+        # Dropout back-prop for layer 2
+        if D2 is not None:
+            dA2 *= D2
+            dA2 /= (1.0 - self.p_drop)
+
+        # Layer 2
+        dZ2 = dA2 * self.relu_grad(Z2)
+        dW2 = A1.T @ dZ2
+        db2 = dZ2.sum(0, keepdims=True)
+        dA1 = dZ2 @ self.W2.T
+
+        # Dropout back-prop for layer 1
+        if D1 is not None:
+            dA1 *= D1
+            dA1 /= (1.0 - self.p_drop)
+
+        # Layer 1
+        dZ1 = dA1 * self.relu_grad(Z1)
+        dW1 = X.T @ dZ1
+        db1 = dZ1.sum(0, keepdims=True)
+
+        # SGD update
+        self.W4 -= self.lr * dW4
+        self.b4 -= self.lr * db4
+        self.W3 -= self.lr * dW3
+        self.b3 -= self.lr * db3
+        self.W2 -= self.lr * dW2
+        self.b2 -= self.lr * db2
+        self.W1 -= self.lr * dW1
+        self.b1 -= self.lr * db1
+
+    # ──────────────────────────────────────────────────────────────────
+    # 6. Public helpers
+    # ──────────────────────────────────────────────────────────────────
+    def training_step(self, X_batch, y_batch):
+        """
+        Forward-backward-update on one mini-batch.
+
+        Parameters
+        ----------
+        X_batch : ndarray, shape (batch, input_size)
+        y_batch : ndarray, shape (batch,) or (batch,1) – 0/1 labels
+
+        Returns
+        -------
+        loss : scalar
+        """
+        y_batch = y_batch.reshape(-1, 1)
+        self.training = True
+        probs, cache  = self.forward(X_batch)
+        loss, dZ4     = self.bce_loss_and_grad(probs, y_batch)
+        self.backward(cache, dZ4)
+        return loss
+
+    def predict_proba(self, X):
+        """Probability of class 1 (default)."""
+        self.training = False
+        probs, _ = self.forward(X)
+        return probs.ravel()
+
+    def predict(self, X, threshold=0.5):
+        """Hard 0/1 prediction at threshold."""
+        return (self.predict_proba(X) >= threshold).astype(int)
+
+
 ###################### FETCH DATASET #######################
 df = None
 df = fetch_dataset()
