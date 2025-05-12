@@ -15,7 +15,7 @@ def fetch_dataset():
     """
     # Check stored data
     df = None
-    dataset_filename = './datasets/Amazon Product Reviews I.csv'
+    dataset_filename = 'Loan_default.csv'
     if 'data' in st.session_state:
         df = st.session_state['data']
     else:

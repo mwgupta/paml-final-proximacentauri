@@ -12,6 +12,15 @@ random.seed(10)
 
 #############################################
 
+st.markdown("# Practical Applications of Machine Learning (PAML)")
+
+#############################################
+
+st.markdown(
+    "### Homework 2 - Predicting Product Review Sentiment Using Classification")
+
+#############################################
+
 st.title('Train Model')
 
 #############################################
@@ -100,12 +109,6 @@ def split_dataset(df, number, target_name, features_name, random_state=42):
 
     X_train, X_test = X.iloc[train_idx], X.iloc[test_idx]
     y_train, y_test = y.iloc[train_idx].values, y.iloc[test_idx].values
-
-    # convert to numpy arrays
-    X_train = np.array(X_train)
-    X_test = np.array(X_test)
-    y_train = np.array(y_train)
-    y_test = np.array(y_test)
 
     return X_train, X_test, y_train, y_test
 
@@ -290,11 +293,6 @@ class LogisticRegression(object):
             st.write('* Number of positive weights: {}'.format(num_positive_weights))
             st.write('* Number of negative weights: {}'.format(num_negative_weights))
             weights = [self.W]
-            # show histogram of model weights
-            fig = go.Figure()
-            fig.add_trace(go.Histogram(x=W, nbinsx=50))
-            fig.update_layout(title_text='Histogram of Model Weights', xaxis_title_text='Weight Value', yaxis_title_text='Count')
-            st.plotly_chart(fig)
         except ValueError as err:
             st.write({str(err)})
         return weights
@@ -658,26 +656,6 @@ class SVM(object):
 df = None
 df = fetch_dataset()
 
-# ----------------------- Custom Preprocessing from experiment4 -----------------------
-from pages.A_Explore_Preprocess_Dataset import one_hot_encode_feature
-from sklearn.preprocessing import StandardScaler
-
-# Drop unique identifier
-if "LoanID" in df.columns:
-    df = df.drop(columns="LoanID")
-
-# Encode categorical variables
-categorical_cols = df.select_dtypes(include=['object', 'category']).columns
-df = one_hot_encode_feature(df, categorical_cols)
-
-# Identify numeric columns
-num_cols = ['Age', 'Income', 'LoanAmount', 'CreditScore', 'MonthsEmployed',
-            'NumCreditLines', 'InterestRate', 'LoanTerm', 'DTIRatio']
-
-# Scale numeric columns
-scaler = StandardScaler()
-df[num_cols] = scaler.fit_transform(df[num_cols])
-
 if df is not None:
 
     # Display dataframe as table
@@ -707,7 +685,6 @@ if df is not None:
 
     X_train, X_val, y_train, y_val = [], [], [], []
     # Compute the percentage of test and training data
-    assert feature_predict_select in df.columns, "Target variable not found in DataFrame"
     if (feature_predict_select in df.columns):
         X_train, X_val, y_train, y_val = split_dataset(
             df, number, feature_predict_select, feature_input_select)
@@ -766,8 +743,8 @@ if df is not None:
             try:
                 lg_model = LogisticRegression(num_iterations=lg_params['num_iterations'], 
                                             learning_rate=lg_params['learning_rate'][0])
-                # lg_model.fit(X_train.to_numpy(), np.ravel(y_train))
-                lg_model.fit(X_train, np.ravel(y_train))
+                lg_model.fit(X_train.to_numpy(), np.ravel(y_train))
+                # lg_model.fit(X_train, np.ravel(y_train))
                 st.session_state[classification_methods_options[0]] = lg_model
             except ValueError as err:
                 st.write({str(err)})

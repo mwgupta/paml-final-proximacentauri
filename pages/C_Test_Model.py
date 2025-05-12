@@ -8,14 +8,6 @@ from pages.B_Train_Model import split_dataset
 from sklearn.metrics import confusion_matrix
 
 random.seed(10)
-#############################################
-
-st.markdown("# Practical Applications of Machine Learning (PAML)")
-
-#############################################
-
-st.markdown(
-    "### Homework 2 - Predicting Product Review Sentiment Using Classification")
 
 #############################################
 
@@ -41,7 +33,6 @@ def compute_accuracy(prediction_labels, true_labels):
         tot_predictions = len(true_labels)
         accuracy = corr_predictions / tot_predictions
 
-        st.write('compute_accuracy function has not been completed. Remove this statement upon completion.')
     except ValueError as err:
         st.write({str(err)})
     return accuracy
@@ -80,46 +71,22 @@ def compute_precison_recall(prediction_labels, true_labels, print_summary=False)
             st.write(f"Precision: {precision:.3f}")
             st.write(f"Recall: {recall:.3f}")
 
-        st.write('compute_precison_recall function has not been completed. Remove this statement upon completion.')
     except ValueError as err:
         st.write({str(err)})
 
     return precision, recall
 
-# Helper Function
-def compute_eval_metrics(X, y_true, model, metrics, print_summary=False):
-    """
-    This function computes one or more metrics (precision, recall, accuracy) using the model
+def compute_eval_metrics(X, y_true, model):
+    y_pred = model.predict(X)
 
-    Inputs:
-        - X: pandas dataframe with training features
-        - y_true: pandas dataframe with true targets
-        - model: the model to evaluate
-        - metrics: the metrics to evaluate performance (string); 'precision', 'recall', 'accuracy'
-    Outputs:
-        - metric_dict: a dictionary contains the computed metrics of the selected model, with the following structure:
-            - {metric1: value1, metric2: value2, ...}
-    """
-    metric_dict = {'precision': -1,
-                   'recall': -1,
-                   'accuracy': -1}
-    try:
-        # Predict the product sentiment using the input model and data X
-        y_pred = model.predict(X)
+    precision, recall = compute_precison_recall(y_pred, y_true)
+    accuracy = compute_accuracy(y_pred, y_true)
 
-        # Compute the evaluation metrics in 'metrics = ['precision', 'recall', 'accuracy']' using the predicted sentiment
-        precision, recall = compute_precison_recall(y_pred, y_true.to_numpy())
-        accuracy = compute_accuracy(y_pred, y_true.to_numpy())
+    st.write(f"Precision: {precision:.3f}")
+    st.write(f"Recall:    {recall:.3f}")
+    st.write(f"Accuracy:  {accuracy:.3f}")
 
-        if 'precision' in metrics:
-            metric_dict['precision'] = precision
-        if 'recall' in metrics:
-            metric_dict['recall'] = recall
-        if 'accuracy' in metrics:
-            metric_dict['accuracy'] = accuracy
-    except ValueError as err:
-        st.write({str(err)})
-    return metric_dict
+    return precision, recall, accuracy
 
 
 # Helper Function
@@ -213,30 +180,43 @@ def restore_data_splits(df):
     y_val = None
     try:
         # Restore train/test dataset
-        if ('X_train' in st.session_state):
+        if 'X_train' in st.session_state:
             X_train = st.session_state['X_train']
             y_train = st.session_state['y_train']
             st.write('Restored train data ...')
-        if ('X_val' in st.session_state):
+        if 'X_val' in st.session_state:
             X_val = st.session_state['X_val']
             y_val = st.session_state['y_val']
             st.write('Restored test data ...')
-        if (X_train is None):
-            # Select variable to explore
-            numeric_columns = list(df.select_dtypes(include='number').columns)
-            feature_select = st.selectbox(
-                label='Select variable to predict',
-                options=numeric_columns,
-            )
-            
-            # Split train/test
-            st.markdown(
-                '### Enter the percentage of test data to use for training the model')
-            number = st.number_input(
-                label='Enter size of test set (X%)', min_value=0, max_value=100, value=30, step=1)
 
-            X_train, X_val, y_train, y_val = split_dataset(df, number, feature_select, 'TF-IDF')
-            st.write('Restored training and test data ...')
+        if X_train is None or X_val is None:
+
+            # Define sensible defaults
+            number = 30  # default test size percent
+            random_state = 42
+            target_name = 'Default'
+            features_name = 'All'
+
+            from sklearn.model_selection import StratifiedShuffleSplit
+
+            if features_name == 'All':
+                features_name = df.columns[df.columns != target_name].tolist()
+
+            X, y = df[features_name], df[target_name]
+            sss = StratifiedShuffleSplit(n_splits=1, test_size=number / 100, random_state=random_state)
+            train_idx, test_idx = next(sss.split(X, y))
+
+            X_train, X_val = X.iloc[train_idx], X.iloc[test_idx]
+            y_train, y_val = y.iloc[train_idx].values, y.iloc[test_idx].values
+
+            # convert to numpy arrays
+            X_train = np.array(X_train)
+            X_val = np.array(X_val)
+            y_train = np.array(y_train)
+            y_val = np.array(y_val)
+
+            st.dataframe(df)
+
     except ValueError as err:
         st.write({str(err)})
     return X_train, X_val, y_train, y_val
@@ -260,61 +240,26 @@ if df is not None:
         model for model in classification_methods_options if model in st.session_state]
     st.session_state['trained_models'] = trained_models
 
+    if len(trained_models) == 0:
+        st.write('No trained classification models found. Please go back to B Train Model.')
+
     # Select a trained classification model for evaluation
     model_select = st.multiselect(
         label='Select trained classification models for evaluation',
         options=trained_models
     )
     if (model_select):
-        st.write(
-            'You selected the following models for evaluation: {}'.format(model_select))
+        model_name = model_select[0]
+        st.write('You selected the following models for evaluation: {}'.format(model_name))
 
-        eval_button = st.button('Evaluate your selected classification models')
+        # Metrics
+        model = st.session_state[model_name]
+        st.markdown('**Train Metrics**')
+        compute_eval_metrics(X_train, y_train, model)
 
-        if eval_button:
-            st.session_state['eval_button_clicked'] = eval_button
+        st.markdown('**Test Metrics**')
+        compute_eval_metrics(X_val, y_val, model)
 
-        if 'eval_button_clicked' in st.session_state and st.session_state['eval_button_clicked']:
-            st.markdown('## Review Classification Model Performance')
-
-            plot_options = ['Metric Results', 'Decision Boundary']
-
-            review_plot = st.multiselect(
-                label='Select plot option(s)',
-                options=plot_options
-            )
-
-            ############## Task 11: Plot ROC Curves
-            if 'Metric Results' in review_plot:
-                models = [st.session_state[model]
-                          for model in model_select]
-
-                train_result_dict = {}
-                val_result_dict = {}
-
-                # Select multiple metrics for evaluation
-                metric_select = st.multiselect(
-                    label='Select metrics for classification model evaluation',
-                    options=metric_options,
-                )
-                if (metric_select):
-                    st.session_state['metric_select'] = metric_select
-                    st.write(
-                        'You selected the following metrics: {}'.format(metric_select))
-
-                    for idx, model in enumerate(models):
-                        train_result_dict[model_select[idx]] = compute_eval_metrics(
-                            X_train, y_train, model, metric_select, print_summary=True)
-                        val_result_dict[model_select[idx]] = compute_eval_metrics(
-                            X_val, y_val, model, metric_select, print_summary=True)
-
-                    st.markdown('### Predictions on the training dataset')
-                    st.dataframe(train_result_dict)
-
-                    st.markdown('### Predictions on the validation dataset')
-                    st.dataframe(val_result_dict)
-        
-            ############## Task 12: Plot Decision Boundary
-            if 'Decision Boundary' in review_plot:
-                models = [st.session_state[model] for model in model_select]
-                plot_decision_boundary(np.array(X_train), np.ravel(y_train), models)
+        # # Decision Boundary
+        # models = [st.session_state[model] for model in model_select]
+        # plot_decision_boundary(np.array(X_train), np.ravel(y_train), models)
