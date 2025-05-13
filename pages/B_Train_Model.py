@@ -461,6 +461,11 @@ class NaiveBayes(object):
             st.write('* Number of positive weights: {}'.format(num_positive_weights))
             st.write('* Number of negative weights: {}'.format(num_negative_weights))
             weights = [self.W, self.W_prior]
+            # show histogram of model weights
+            fig = go.Figure()
+            fig.add_trace(go.Histogram(x=self.W, nbinsx=50))
+            fig.update_layout(title_text='Histogram of Model Weights', xaxis_title_text='Weight Value', yaxis_title_text='Count')
+            st.plotly_chart(fig)
         except ValueError as err:
             st.write({str(err)})
         return weights
@@ -629,6 +634,11 @@ class SVM(object):
             st.write('* Number of positive weights: {}'.format(num_positive_weights))
             st.write('* Number of negative weights: {}'.format(num_negative_weights))
             weights = [self.W]
+            # show histogram of model weights
+            fig = go.Figure()
+            fig.add_trace(go.Histogram(x=self.W, nbinsx=50))
+            fig.update_layout(title_text='Histogram of Model Weights', xaxis_title_text='Weight Value', yaxis_title_text='Count')
+            st.plotly_chart(fig)
         except ValueError as err:
             st.write({str(err)})
         return weights
@@ -886,6 +896,16 @@ class ANN:
         st.write('Model Coefficients for Artificial Neural Network')
         st.write('* Total parameters: {}'.format(
             self.W1.size + self.W2.size + self.W3.size + self.W4.size))
+        
+        # show histogram of model weights
+        weights = np.concatenate([self.W1.flatten(), self.W2.flatten(),
+                                  self.W3.flatten(), self.W4.flatten()])
+        # st.write(w.shape for w in [self.W1, self.W2, self.W3, self.W4])
+        fig = go.Figure()
+        fig.add_trace(go.Histogram(x=weights, nbinsx=50))
+        fig.update_layout(title_text='Histogram of Model Weights', xaxis_title_text='Weight Value', yaxis_title_text='Count')
+        st.plotly_chart(fig)
+
         # Return all weights in a list so downstream code works
         return [self.W1, self.W2, self.W3, self.W4,
                 self.b1, self.b2, self.b3, self.b4]
