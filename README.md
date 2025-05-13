@@ -26,6 +26,7 @@ institutions seeking greater control over risk modeling.
 
 # Repository Content
 
+```
 .
 ├── .github/workflows/           # GitHub Actions config
 ├── pages/                       # Streamlit app pages (A, B, C)
@@ -36,6 +37,7 @@ institutions seeking greater control over risk modeling.
 ├── helper_functions.py          # Utility functions
 ├── mortgage.py                  # Streamlit app entry point
 ├── setup.cfg                    # Python package configuration
+```
 
 # Run Streamlit
 
