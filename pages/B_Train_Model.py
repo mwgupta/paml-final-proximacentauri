@@ -86,7 +86,7 @@ def split_dataset_v0(df, number, target, feature_encoding, random_state=42):
 def split_dataset(df, number, target_name, features_name, random_state=42):
     from sklearn.model_selection import StratifiedShuffleSplit
 
-    sss = StratifiedShuffleSplit(n_splits=1, test_size=number, random_state=random_state)
+    sss = StratifiedShuffleSplit(n_splits=1, test_size=number / 100, random_state=random_state)
 
     # st.write(features_name)
     # st.write(target_name)
