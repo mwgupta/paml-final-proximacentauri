@@ -1,14 +1,37 @@
-[![Review Assignment Due Date](https://classroom.github.com/assets/deadline-readme-button-22041afd0340ce965d47ae6ef1cefeee28c7c493a6346c4f15d667ab976d596c.svg)](https://classroom.github.com/a/1PiV8uhi)
-# Practical Applications in Machine Learning 
+# Predicting Mortgage Defaults Using Neural Networks
 
-# Predicting Mortgage Propensity Scores Using Regression
+Meili Gupta, Salahuddin Khan, Rheia Edgar-Nemec
 
 # Abstract
 
-Customer acquisition, and preventing drop-off during the application process, is a central challenge for digital-first companies. Newrez, the fourth-largest mortgage lender in the U.S., receives over 30 million annual website visits but converts only 0.15\% of these visitors into loan originations. This project aims to increase that rate through targeted interventions powered by machine learning. Specifically, we propose using Lasso and Ridge regression to predict drop-off risk across different stages of the application funnel. Based on a user’s predicted likelihood of completing the process, different prompts will be deployed - ranging from targeted ads to calls from loan officers. We will evaluate both models using metrics such as conversion rate, click-through rate (CTR), and application abandonment rate, and will deploy the highest-performing model in a Streamlit application. Our expected outcome is a doubling of the acquisition rate—from 0.15\% to 0.30\%—after implementation. More broadly, this work contributes a scalable framework for intelligent engagement in high-stakes online applications, with implications for banking, insurance, and other digital services.
+The mortgage industry, a 20.2 trillion dollar sector in the
+U.S., relies heavily on third-party vendors for borrower risk
+assessment. This often comes at the cost of transparency
+and flexibility. This project investigates whether machine
+learning can offer an internal, cost-effective alternative by
+predicting the likelihood of mortgage loan default. We im-
+plemented four classification models; Logistic Regression,
+Support Vector Machine, Naive Bayes, and a fully con-
+nected Artificial Neural Network (ANN). Each were trained
+from scratch and evaluated using accuracy, precision, re-
+call, and F1 score. The ANN outperformed all other mod-
+els, achieving the highest F1 score and demonstrating strong
+performance in identifying potential defaulters. Results are
+deployed via an interactive Streamlit app that allows finan-
+cial analysts to upload mortgage datasets and receive pre-
+dictive insights. This work not only validates the use of
+custom-built ML tools in the mortgage space but also con-
+tributes a replicable and accessible framework for financial
+institutions seeking greater control over risk modeling.
 
-# Run Code
+# Repository Content
+
+
+
+# Run Streamlit
 
 ```
 streamlit run mortgage.py
 ```
+
+
