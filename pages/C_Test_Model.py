@@ -82,6 +82,11 @@ def compute_eval_metrics(X, y_true, model):
     precision, recall = compute_precison_recall(y_pred, y_true)
     accuracy = compute_accuracy(y_pred, y_true)
 
+    # print y_pred breakdown between 0s and 1s
+    # st.write(len(y_pred), 'total predictions')
+    # st.write(y_pred[y_pred == 1].shape[0], 'predicted as 1')
+    # st.write(y_pred[y_pred == 0].shape[0], 'predicted as 0')
+
     st.write(f"Precision: {precision:.3f}")
     st.write(f"Recall:    {recall:.3f}")
     st.write(f"Accuracy:  {accuracy:.3f}")
@@ -190,31 +195,32 @@ def restore_data_splits(df):
             st.write('Restored test data ...')
 
         if X_train is None or X_val is None:
-
-            # Define sensible defaults
-            number = 30  # default test size percent
+            # Split dataset if not already in session
+            test_size = 0.30  # 30% test data
             random_state = 42
             target_name = 'Default'
             features_name = 'All'
 
-            from sklearn.model_selection import StratifiedShuffleSplit
-
+            # Extract features
             if features_name == 'All':
                 features_name = df.columns[df.columns != target_name].tolist()
 
+            from sklearn.model_selection import StratifiedShuffleSplit
+
             X, y = df[features_name], df[target_name]
-            sss = StratifiedShuffleSplit(n_splits=1, test_size=number / 100, random_state=random_state)
+            sss = StratifiedShuffleSplit(n_splits=1, test_size=test_size, random_state=random_state)
             train_idx, test_idx = next(sss.split(X, y))
 
             X_train, X_val = X.iloc[train_idx], X.iloc[test_idx]
             y_train, y_val = y.iloc[train_idx].values, y.iloc[test_idx].values
 
-            # convert to numpy arrays
+            # Convert to numpy arrays
             X_train = np.array(X_train)
             X_val = np.array(X_val)
             y_train = np.array(y_train)
             y_val = np.array(y_val)
 
+            st.write(f"Train size: {len(X_train)}, Test size: {len(X_val)}")
             st.dataframe(df)
 
     except ValueError as err:
