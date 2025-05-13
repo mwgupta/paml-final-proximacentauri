@@ -26,7 +26,16 @@ institutions seeking greater control over risk modeling.
 
 # Repository Content
 
-
+.
+├── .github/workflows/           # GitHub Actions config
+├── pages/                       # Streamlit app pages (A, B, C)
+├── .gitignore                   # Files/folders to ignore in version control
+├── Loan_default.csv             # Dataset
+├── README.md                    # Project overview and instructions
+├── experiments.ipynb            # Data pre-processing, imports models, runs experiments
+├── helper_functions.py          # Utility functions
+├── mortgage.py                  # Streamlit app entry point
+├── setup.cfg                    # Python package configuration
 
 # Run Streamlit
 
